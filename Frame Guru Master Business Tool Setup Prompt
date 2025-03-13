@@ -1,0 +1,195 @@
+# Frame Guru Master Business Tool - Setup Guide
+
+This document provides comprehensive instructions for setting up and customizing the Frame Guru Master Business Tool, a complete management solution for custom framing businesses.
+
+## Overview
+
+The Frame Guru Master Business Tool is an integrated solution that helps custom framing businesses manage orders, track inventory, analyze business metrics, and maintain customer relationships. Built with React and modern web technologies, it offers a user-friendly interface with dark/light mode options.
+
+## Prerequisites
+
+- Basic knowledge of web development (HTML, CSS, JavaScript)
+- Node.js and npm installed (for local development)
+- A GitHub account (for GitHub deployment)
+- A Replit account (for Replit deployment)
+- Your custom frame business data in CSV format
+
+## Data Preparation
+
+The tool expects a CSV file with the following columns:
+- Order ID
+- Item Number
+- Vendor
+- Customer Name
+- Material
+- QTY (Quantity)
+- Ft Nded (Feet Needed)
+- Ext cost (Extended Cost)
+- Frame Size
+- Due Date
+- Order Progress
+- Boolean status fields (Ordered, Arrived, F. Cut, Prepped, Done, Delivered)
+
+Ensure your CSV data is properly formatted:
+1. Remove any empty rows
+2. Ensure column headers match the expected format
+3. Standardize date formats (e.g., MM/DD/YYYY)
+4. Validate boolean fields (should be true/false values)
+
+## Implementation Options
+
+### Option 1: Local Development
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/frame-guru-master.git
+   cd frame-guru-master
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Place your frame data CSV in the `public/data/` directory with the filename `frame-data.csv`
+
+4. Start the development server:
+   ```bash
+   npm start
+   ```
+
+5. Access the application at `http://localhost:3000`
+
+### Option 2: GitHub Deployment
+
+Follow the GitHub Implementation Guide to:
+1. Set up your GitHub repository
+2. Create the necessary project structure
+3. Configure GitHub Pages for deployment
+4. Add your CSV data file
+5. Deploy the application
+
+### Option 3: Replit Deployment
+
+Follow the Replit Implementation Guide to:
+1. Create a new React.js project on Replit
+2. Set up the project structure
+3. Install dependencies
+4. Upload your CSV data
+5. Run and share the application
+
+## Customization Guide
+
+### 1. Business Branding
+
+Customize the application to match your framing business brand:
+
+1. Update the logo and business name:
+   - Edit the `Header.js` component to display your business name
+   - Add your logo image to the `public/images/` directory
+
+2. Modify the color scheme:
+   - Edit the theme variables in `src/styles/theme.css`:
+     ```css
+     :root {
+       /* Accent colors - change these to match your brand */
+       --accent-teal: #00ADB5; /* Primary color */
+       --accent-pink: #E31E6A; /* Secondary color */
+       --accent-green: #21C685; /* Success color */
+     }
+     ```
+
+3. Update fonts:
+   - Change the Google Fonts import in `public/index.html`
+   - Update the font family in the CSS
+
+### 2. Feature Customization
+
+Enable or disable specific features based on your business needs:
+
+1. Dashboard metrics:
+   - Modify the `Dashboard.js` component to show the metrics most relevant to your business
+
+2. Custom order fields:
+   - Edit the `OrderManagement.js` component to include additional fields you track
+
+3. Inventory categories:
+   - Adjust the `InventoryManagement.js` component to match your inventory organization
+
+4. Customer information:
+   - Update the `CustomerManagement.js` component to include relevant customer data fields
+
+### 3. Advanced Integrations
+
+Extend the application with additional integrations:
+
+1. SMS notifications:
+   - Implement a service like Twilio to send automated SMS updates to customers
+   - Create an SMS configuration panel in the admin settings
+
+2. Payment processing:
+   - Add payment gateway integration (Stripe, PayPal, etc.)
+   - Link orders to payment status
+
+3. Calendar integration:
+   - Connect with Google Calendar or other calendar APIs
+   - Schedule production and delivery timelines
+
+4. Cloud storage:
+   - Implement file uploads for customer artwork
+   - Store design documents and customer approvals
+
+## Maintenance and Updates
+
+### Regular Data Backup
+
+To prevent data loss, implement a regular backup strategy:
+
+1. Export order data periodically
+2. Back up your CSV data file
+3. Consider version control for your data files
+
+### Feature Updates
+
+To keep your tool current:
+
+1. Follow the project's GitHub repository for updates
+2. Test new features in a development environment before deploying
+3. Keep dependencies updated with `npm update`
+
+## Troubleshooting
+
+### Common Issues
+
+1. CSV parsing errors:
+   - Check for special characters or commas within field values
+   - Ensure proper encoding (UTF-8)
+
+2. Chart rendering issues:
+   - Verify the data structure matches what the charts expect
+   - Check for null or undefined values that might cause rendering problems
+
+3. Performance with large datasets:
+   - Implement pagination for order lists
+   - Consider server-side filtering for very large datasets
+
+### Getting Help
+
+If you encounter issues:
+
+1. Check the GitHub repository issues section
+2. Consult the documentation for specific components
+3. Reach out to the community on forums or discussion boards
+
+## Security Considerations
+
+Protect your business data:
+
+1. Implement user authentication
+2. Use HTTPS for all deployments
+3. Consider API keys for third-party integrations
+4. Regular security updates for all dependencies
+
+---
+
+Good luck with your Frame Guru Master Business Tool implementation! This comprehensive solution will streamline your custom framing business operations and provide valuable insights into your business performance.
