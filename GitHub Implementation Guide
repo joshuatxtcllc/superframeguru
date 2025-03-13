@@ -1,0 +1,373 @@
+# Frame Guru Master Business Tool - GitHub Implementation
+
+This guide provides instructions for implementing the Frame Guru Master Business Tool using GitHub and deploying it as a web application.
+
+## Repository Structure
+
+```
+frame-guru-master/
+├── public/
+│   ├── index.html
+│   ├── favicon.ico
+│   └── data/
+│       └── frame-data.csv
+├── src/
+│   ├── components/
+│   │   ├── Dashboard.js
+│   │   ├── OrderManagement.js
+│   │   ├── CustomerManagement.js
+│   │   ├── InventoryManagement.js
+│   │   ├── Header.js
+│   │   ├── Footer.js
+│   │   └── charts/
+│   │       ├── StatusChart.js
+│   │       ├── MaterialChart.js
+│   │       └── ProgressChart.js
+│   ├── utils/
+│   │   ├── dataProcessor.js
+│   │   ├── csvParser.js
+│   │   └── themeUtils.js
+│   ├── contexts/
+│   │   └── AppContext.js
+│   ├── styles/
+│   │   ├── main.css
+│   │   ├── theme.css
+│   │   └── components.css
+│   ├── App.js
+│   └── index.js
+├── package.json
+├── README.md
+├── .gitignore
+└── .github/
+    └── workflows/
+        └── deploy.yml
+```
+
+## Implementation Steps
+
+### 1. Set Up Your GitHub Repository
+
+1. Create a new repository on GitHub named "frame-guru-master"
+2. Clone the repository to your local machine:
+   ```bash
+   git clone https://github.com/yourusername/frame-guru-master.git
+   cd frame-guru-master
+   ```
+
+### 2. Initialize the React Project
+
+1. Create a new React application:
+   ```bash
+   npx create-react-app .
+   ```
+
+2. Install required dependencies:
+   ```bash
+   npm install recharts papaparse lodash styled-components
+   ```
+
+### 3. Add the Core Files
+
+#### App.js
+Create `src/App.js` with the main application code:
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import Header from './components/Header';
+import Dashboard from './components/Dashboard';
+import OrderManagement from './components/OrderManagement';
+import CustomerManagement from './components/CustomerManagement';
+import InventoryManagement from './components/InventoryManagement';
+import Footer from './components/Footer';
+import { parseFrameData } from './utils/csvParser';
+import './styles/main.css';
+
+function App() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [frameData, setFrameData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/data/frame-data.csv');
+        const text = await response.text();
+        const data = parseFrameData(text);
+        setFrameData(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading frame data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+    document.body.className = darkMode ? 'light-theme' : 'dark-theme';
+  };
+
+  return (
+    <div className={darkMode ? "dark-theme" : "light-theme"}>
+      <div className="app">
+        <Header 
+          darkMode={darkMode} 
+          toggleTheme={toggleTheme} 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+
+        <main className="pt-24">
+          <div className="container">
+            {loading ? (
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading frame data...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'dashboard' && <Dashboard frameData={frameData} />}
+                {activeTab === 'orders' && <OrderManagement frameData={frameData} />}
+                {activeTab === 'customers' && <CustomerManagement frameData={frameData} />}
+                {activeTab === 'inventory' && <InventoryManagement frameData={frameData} />}
+              </>
+            )}
+          </div>
+        </main>
+        
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+export default App;
+```
+
+#### Create Component Files
+
+Create all the necessary component files as per the repository structure. Each component should handle its specific functionality.
+
+### 4. Add CSV Parser Utility
+
+Create a utility for parsing the CSV data:
+
+```jsx
+// src/utils/csvParser.js
+import Papa from 'papaparse';
+
+export const parseFrameData = (csvText) => {
+  const result = Papa.parse(csvText, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true
+  });
+  
+  return result.data;
+};
+```
+
+### 5. Create GitHub Actions Workflow for Deployment
+
+Create a GitHub Actions workflow file for CI/CD:
+
+```yaml
+# .github/workflows/deploy.yml
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@4.1.4
+        with:
+          branch: gh-pages
+          folder: build
+```
+
+### 6. Update package.json
+
+Update your `package.json` to include the homepage and deploy scripts:
+
+```json
+{
+  "name": "frame-guru-master",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://yourusername.github.io/frame-guru-master",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "recharts": "^2.5.0",
+    "papaparse": "^5.4.1",
+    "lodash": "^4.17.21",
+    "styled-components": "^6.0.7"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "gh-pages": "^5.0.0"
+  }
+}
+```
+
+### 7. Update README.md
+
+Create a detailed README file for your repository:
+
+```markdown
+# Frame Guru Master Business Tool
+
+A comprehensive business management tool for custom framing businesses. This application provides a dashboard, order management, customer tracking, and inventory management all in one place.
+
+## Features
+
+- **Business Dashboard**: Visual analytics of order status and performance metrics
+- **Order Management**: Track and update orders through their lifecycle
+- **Customer Management**: Manage customer relationships and history
+- **Inventory Management**: Monitor materials and get low stock alerts
+- **Dark/Light Mode**: Toggle between themes for comfortable viewing
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 14.x or higher
+- npm 6.x or higher
+
+### Installation
+
+1. Clone this repository
+2. Install dependencies: `npm install`
+3. Start the development server: `npm start`
+
+### Deployment
+
+Deploy to GitHub Pages: `npm run deploy`
+
+## Data Format
+
+This application expects a CSV file with the following structure:
+- Order ID
+- Item Number
+- Vendor
+- Customer Name
+- Material
+- QTY
+- Frame Size
+- Due Date
+- Order Progress
+- Status fields (Ordered, Arrived, Cut, Prepped, Done, Delivered)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+```
+
+### 8. Add .gitignore
+
+Create a proper `.gitignore` file:
+
+```
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+```
+
+### 9. Deploy to GitHub Pages
+
+1. Install the gh-pages package:
+   ```bash
+   npm install --save-dev gh-pages
+   ```
+
+2. Deploy your application:
+   ```bash
+   npm run deploy
+   ```
+
+### 10. Setting Up Data Access
+
+Since GitHub Pages is a static hosting service, you'll need to include your CSV data in the repository. Add your frame data CSV to the `public/data/` directory.
+
+For a production implementation, consider using a backend API to serve the data or a cloud database.
+
+## Best Practices
+
+1. **Code Organization**: Keep components modular and focused on a single responsibility
+2. **State Management**: For larger implementations, consider using Context API or Redux
+3. **Error Handling**: Add robust error handling for data loading and processing
+4. **Responsive Design**: Ensure the UI works well on all device sizes
+5. **Performance**: Optimize rendering of large datasets with pagination and virtualization
+6. **Testing**: Add unit and integration tests for critical functionality
