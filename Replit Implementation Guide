@@ -1,0 +1,624 @@
+# Frame Guru Master Business Tool - Replit Implementation
+
+This guide provides step-by-step instructions for setting up the Frame Guru Master Business Tool on Replit, a browser-based development environment that makes it easy to code, host, and collaborate on projects.
+
+## Replit Setup Process
+
+### 1. Create a New Replit Project
+
+1. Go to [Replit](https://replit.com) and sign in (or create an account)
+2. Click on "Create" to start a new project
+3. Select "React.js" as the template
+4. Name your project "FrameGuruMaster"
+5. Click "Create Repl"
+
+### 2. Set Up the Project Structure
+
+Once your Repl is created, you'll need to set up the project structure:
+
+```
+FrameGuruMaster/
+├── public/
+│   ├── index.html
+│   └── data/
+│       └── frame-data.csv
+├── src/
+│   ├── components/
+│   │   ├── Dashboard.js
+│   │   ├── OrderManagement.js
+│   │   ├── CustomerManagement.js
+│   │   ├── InventoryManagement.js
+│   │   ├── Header.js
+│   │   └── Footer.js
+│   ├── styles/
+│   │   ├── main.css
+│   │   └── theme.css
+│   ├── utils/
+│   │   └── dataUtils.js
+│   ├── App.js
+│   └── index.js
+├── package.json
+└── README.md
+```
+
+Create these folders and files using the Replit file explorer.
+
+### 3. Install Dependencies
+
+Replit will automatically install React for you. You'll need to add additional dependencies:
+
+1. Open the Shell in Replit
+2. Run the following commands:
+
+```bash
+npm install recharts papaparse lodash styled-components
+```
+
+### 4. Upload Your CSV Data
+
+1. In the Replit file explorer, navigate to the `public/data/` directory
+2. Create a new file named `frame-data.csv`
+3. Upload your frame data by copying and pasting it into this file, or by using the upload feature in Replit
+
+### 5. Implement the Core Files
+
+#### App.js
+
+Replace the content of `src/App.js` with:
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
+import { Dashboard } from './components/Dashboard';
+import { OrderManagement } from './components/OrderManagement';
+import { CustomerManagement } from './components/CustomerManagement';
+import { InventoryManagement } from './components/InventoryManagement';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import './styles/main.css';
+
+function App() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [frameData, setFrameData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/data/frame-data.csv');
+        const text = await response.text();
+        
+        Papa.parse(text, {
+          header: true,
+          dynamicTyping: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            setFrameData(results.data);
+            setLoading(false);
+          },
+          error: (error) => {
+            console.error('Error parsing CSV:', error);
+            setLoading(false);
+          }
+        });
+      } catch (error) {
+        console.error('Error loading frame data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    
+    // Set initial theme
+    document.body.className = darkMode ? 'dark-theme' : 'light-theme';
+  }, []);
+
+  // Toggle between light and dark mode
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+    document.body.className = darkMode ? 'light-theme' : 'dark-theme';
+  };
+
+  return (
+    <div className={darkMode ? "dark-theme" : "light-theme"}>
+      <div className="app">
+        <Header 
+          darkMode={darkMode} 
+          toggleTheme={toggleTheme}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+
+        <main className="main-content">
+          <div className="container">
+            {loading ? (
+              <div className="loading-spinner">
+                <div className="spinner"></div>
+                <p>Loading frame data...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'dashboard' && <Dashboard frameData={frameData} />}
+                {activeTab === 'orders' && <OrderManagement frameData={frameData} />}
+                {activeTab === 'customers' && <CustomerManagement frameData={frameData} />}
+                {activeTab === 'inventory' && <InventoryManagement frameData={frameData} />}
+              </>
+            )}
+          </div>
+        </main>
+        
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+export default App;
+```
+
+#### Create Component Files
+
+Create all the component files according to the structure. Here's an example for the Dashboard component:
+
+```jsx
+// src/components/Dashboard.js
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import _ from 'lodash';
+
+export const Dashboard = ({ frameData }) => {
+  // Calculate dashboard statistics
+  const totalOrders = frameData.length;
+  const completedOrders = frameData.filter(order => order.Done === true).length;
+  const inProgressOrders = frameData.filter(order => order.Ordered === true && order.Done !== true).length;
+  const pendingOrders = totalOrders - completedOrders - inProgressOrders;
+
+  // Get unique statuses
+  const uniqueStatuses = _.uniqBy(frameData, 'Order Progress')
+    .map(item => item['Order Progress'])
+    .filter(Boolean);
+
+  // Create status chart data
+  const statusChartData = uniqueStatuses.map(status => ({
+    name: status,
+    count: frameData.filter(order => order['Order Progress'] === status).length
+  }));
+
+  // Get unique materials
+  const uniqueMaterials = _.uniqBy(frameData, 'Material')
+    .map(item => item.Material)
+    .filter(Boolean);
+
+  // Create material chart data
+  const materialChartData = uniqueMaterials.map(material => ({
+    name: material,
+    count: frameData.filter(order => order.Material === material).length
+  }));
+
+  // Colors for charts
+  const COLORS = ['#00ADB5', '#E31E6A', '#21C685', '#F8C630', '#9C27B0', '#FF5722'];
+
+  return (
+    <div className="dashboard">
+      <h2 className="section-title">Business Dashboard</h2>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-4">
+        <div className="card">
+          <h3>Total Orders</h3>
+          <p className="stat-value">{totalOrders}</p>
+        </div>
+        <div className="card">
+          <h3>Completed</h3>
+          <p className="stat-value completed">{completedOrders}</p>
+        </div>
+        <div className="card">
+          <h3>In Progress</h3>
+          <p className="stat-value in-progress">{inProgressOrders}</p>
+        </div>
+        <div className="card">
+          <h3>Pending</h3>
+          <p className="stat-value pending">{pendingOrders}</p>
+        </div>
+      </div>
+      
+      {/* Charts */}
+      <div className="grid grid-2">
+        <div className="card">
+          <h3>Order Status</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={statusChartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="count"
+                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+              >
+                {statusChartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="card">
+          <h3>Material Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={materialChartData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="count" fill="#00ADB5" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      
+      {/* Additional charts and stats would go here */}
+    </div>
+  );
+};
+```
+
+Create similar components for OrderManagement, CustomerManagement, and InventoryManagement.
+
+### 6. Add CSS Styles
+
+Create the necessary CSS files to style your application:
+
+```css
+/* src/styles/main.css */
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Import theme styles */
+@import './theme.css';
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* App container */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  padding-top: 80px; /* Space for fixed header */
+}
+
+/* Grid layouts */
+.grid {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Cards */
+.card {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+/* Button styles */
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--accent-teal);
+  color: white;
+}
+
+.btn-secondary {
+  background-color: var(--accent-pink);
+  color: white;
+}
+
+/* Form elements */
+.form-control {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 15px;
+}
+
+/* Headings */
+h2.section-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  position: relative;
+}
+
+h2.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: var(--accent-teal);
+  border-radius: 3px;
+}
+
+/* Stats */
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.completed {
+  color: var(--accent-green);
+}
+
+.in-progress {
+  color: var(--accent-teal);
+}
+
+.pending {
+  color: var(--accent-pink);
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid var(--accent-teal);
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .card {
+    padding: 15px;
+  }
+}
+```
+
+```css
+/* src/styles/theme.css */
+:root {
+  /* Light theme colors */
+  --light-bg: #fafafa;
+  --light-text: #333;
+  --light-text-secondary: #666;
+  --light-border: #e0e0e0;
+  --light-card-bg: #ffffff;
+  
+  /* Dark theme colors */
+  --dark-bg: #1f1f2e;
+  --dark-text: #f5f5f5;
+  --dark-text-secondary: #b0b0b0;
+  --dark-border: #3a3a4a;
+  --dark-card-bg: #2a2a3a;
+  
+  /* Accent colors */
+  --accent-teal: #00ADB5;
+  --accent-pink: #E31E6A;
+  --accent-green: #21C685;
+  
+  /* Common */
+  --spacing-sm: 10px;
+  --spacing-md: 20px;
+  --spacing-lg: 40px;
+  
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 16px;
+  
+  --transition-normal: 0.3s ease;
+}
+
+/* Light theme */
+.light-theme {
+  --bg-primary: var(--light-bg);
+  --text-primary: var(--light-text);
+  --text-secondary: var(--light-text-secondary);
+  --border-color: var(--light-border);
+  --card-bg: var(--light-card-bg);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Dark theme */
+.dark-theme {
+  --bg-primary: var(--dark-bg);
+  --text-primary: var(--dark-text);
+  --text-secondary: var(--dark-text-secondary);
+  --border-color: var(--dark-border);
+  --card-bg: var(--dark-card-bg);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+```
+
+### 7. Modify index.html
+
+Update the `public/index.html` file to include the right fonts and metadata:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="The Frame Guru Master - Custom Framing Business Tool"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Frame Guru Master</title>
+  </head>
+  <body class="light-theme">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
+```
+
+### 8. Create Utility Functions
+
+Create utility functions to handle data processing:
+
+```javascript
+// src/utils/dataUtils.js
+import _ from 'lodash';
+
+// Filter frame data based on search term and filters
+export const filterFrameData = (data, searchTerm, statusFilter, materialFilter) => {
+  let filtered = [...data];
+  
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(order => 
+      (order['Customer Name'] && order['Customer Name'].toLowerCase().includes(term)) ||
+      (order['Order ID'] && String(order['Order ID']).includes(term)) ||
+      (order['Item Number'] && order['Item Number'].toLowerCase().includes(term))
+    );
+  }
+  
+  if (statusFilter && statusFilter !== 'all') {
+    filtered = filtered.filter(order => order['Order Progress'] === statusFilter);
+  }
+  
+  if (materialFilter && materialFilter !== 'all') {
+    filtered = filtered.filter(order => order['Material'] === materialFilter);
+  }
+  
+  return filtered;
+};
+
+// Get unique values from a specific field in the data
+export const getUniqueValues = (data, field) => {
+  return ['all', ...new Set(data.filter(item => item[field]).map(item => item[field]))];
+};
+
+// Group orders by customer
+export const groupOrdersByCustomer = (data) => {
+  return _.chain(data)
+    .groupBy('Customer Name')
+    .map((orders, name) => ({
+      name,
+      customerId: orders[0]['Customer ID'],
+      totalOrders: orders.length
+    }))
+    .value()
+    .filter(customer => customer.name);
+};
+
+// Get status tracking data
+export const getStatusTrackingData = (data) => {
+  return [
+    { name: 'Ordered', count: data.filter(order => order['Ordered'] === true).length },
+    { name: 'Arrived', count: data.filter(order => order['Arrived'] === true).length },
+    { name: 'Cut', count: data.filter(order => order['F. Cut'] === true).length },
+    { name: 'Prepped', count: data.filter(order => order['Prepped'] === true).length },
+    { name: 'Done', count: data.filter(order => order['Done'] === true).length },
+    { name: 'Delivered', count: data.filter(order => order['Delivered'] === true).length }
+  ];
+};
+```
+
+### 9. Run and Test Your Application
+
+Click the "Run" button in Replit to start your application. The preview window will show your application in action.
+
+### 10. Share Your Replit Project
+
+1. Click the "Share" button in the top-right corner
+2. Set the project to "Public" to allow anyone to view it
+3. Copy the share link to distribute
